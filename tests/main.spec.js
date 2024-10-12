@@ -1,80 +1,47 @@
 // @ts-check
-const { test, expect } = require('@playwright/test');
-const { DOMAIN, NAVS_DATA } = require('../constants');
+import { chromium, expect, test } from '@playwright/test';
+import BasePage from '../framework/pages/BasePage';
+import BlocksPage from '../framework/pages/BlocksPage';
+
+const url = '/';
 
 test('Check title', async ({ page }) => {
-  await page.goto(DOMAIN);
-  await expect(page).toHaveTitle(/VK Добро - благотворительность в России - сервис добрых дел/);
+  const basePage = BasePage({ page });
+  await basePage.visit(url, 'VK Добро - благотворительность в России - сервис добрых дел')
 });
 
-test('Check navigation', async ({ page }) => {
-  await page.goto(DOMAIN);
-
-  const navItems = await page.locator('//div[contains(@class, "navs")]/a').all();
-  for (const [i, item] of navItems.entries()) {
-    const text = await item.innerText();
-    const href = await item.getAttribute('href');
-    if (text !== NAVS_DATA[i].text) {
-      throw new Error(`Текст элемента не равен ${NAVS_DATA[i].text}, а равен '${text}'.`);
-    }
-    if (href !== NAVS_DATA[i].url) {
-      throw new Error(`Ссылка элемента не равна ${NAVS_DATA[i].url}, а равна '${href}'.`);
-    }
-  }
+test('Check header', async ({ page }) => {
+  const basePage = BasePage({ page });
+  await basePage.checkHeader(url)
 });
 
 test('Check banner', async ({ page }) => {
-  await page.goto(DOMAIN);
-
-  const titleBannerContent = await page.locator('//div[contains(@class, "shortStatistic")]/p[contains(@class, "title")]').textContent();
-  const expectedTitleBanner = 'Добро — место,где легко помогать';
-  if (titleBannerContent !== expectedTitleBanner) {
-    throw new Error(`Текст элемента не равен ${expectedTitleBanner}, а равен '${titleBannerContent}'.`);
-  }
-
-  const infoBannerElements = await page.locator('//a[contains(@class, "statistic")]/div[contains(@class, "info")]/p[contains(@class, "title4")]').all();
-  if (await infoBannerElements[0].textContent() === '0 честных фондов') {
-    throw new Error('Данные по количеству фондов отсутствуют')
-  }
-  if (await infoBannerElements[1].textContent() === '0 раз') {
-    throw new Error('Данные по количеству помощи отсутствуют')
-  }
-
-  const closeBannerEl = page.locator('//div[contains(@class, "shortStatistic")]/*[contains(@class, "close")]');
-  if (!await closeBannerEl.isEnabled()) {
-    throw new Error('Баннер нельзя закрыть')
-  }
+  const blocksPage = BlocksPage({ page });
+  await blocksPage.checkBanner(url);
 });
 
-test('Check help now button', async ({ page }) => {
-  await page.goto(DOMAIN);
+test('Check subscribe block', async () => {
+  const browser = await chromium.launch({ headless: false })
+  const page = await browser.newPage()
 
-  const button = await page.waitForSelector('//button[contains(@class, "helpNowPopup")]');
-  if (!await button.isEnabled()) {
-    throw new Error('Кнопка для открытия платежного окна не кликабельна')
-  }
+  const blocksPage = BlocksPage({ page });
+  await blocksPage.checkSubscribeBlock(url);
+  await browser.close()
 })
 
 test('Check subscribe popup', async ({ page }) => {
-  await page.goto(`${DOMAIN}?subscribe=true`);
+  await page.goto(`/?subscribe=true`);
 
   const modal = page.locator('//div[contains(@class, "vkuiPopoutRoot__modal")]');
-  if (!await modal.count()) {
-    throw new Error('Модальное окно не открылось')
-  }
+  expect(await modal.count()).toBeGreaterThan(0);
 
   const containerTitle = await page.locator('//div[contains(@class, "vkuiModalCardBase__container")]/h2').textContent();
   const expectedContainerTitle = 'Сработало! Вы подписались на рассылку';
-  if (containerTitle !== expectedContainerTitle) {
-    throw new Error(`Текст элемента не равен ${expectedContainerTitle}, а равен '${containerTitle}'.`);
-  }
+  expect(containerTitle).toBe(expectedContainerTitle);
 
   const containerSubtitle = await page.locator('//div[contains(@class, "vkuiModalCardBase__container")]/h5').textContent();
   const expectedContainerSubtitle = 'Ждите хороших новостей. Изменить настройки подписки можно в личном кабинете';
-
-  if (containerSubtitle !== expectedContainerSubtitle) {
-    throw new Error(`Текст элемента не равен ${expectedContainerSubtitle}, а равен '${containerSubtitle}'.`);
-  }
+  expect(containerSubtitle).toBe(expectedContainerSubtitle);
 
   const buttons = await page.locator('//div[contains(@class, "vkuiModalCardBase__actions")]/div[contains(@class, "vkuiButtonGroup")]/*').all();
   const BUTTONS_DATA = [{
@@ -84,17 +51,15 @@ test('Check subscribe popup', async ({ page }) => {
   {
     tag: 'BUTTON',
     text: 'Закрыть'
-  }]
+  }];
+
   for (const [i, item] of buttons.entries()) {
     const text = await item.innerText();
     const tagName = await item.evaluate(el => el.tagName);
 
-    if (tagName !== BUTTONS_DATA[i].tag) {
-      throw new Error(`Тег кнопки не равен ${BUTTONS_DATA[i].tag}, а равен '${tagName}'.`);
-    }
-    if (text !== BUTTONS_DATA[i].text) {
-      throw new Error(`Текст кнопки не равен ${BUTTONS_DATA[i].text}, а равен '${text}'.`);
-    }
+    expect(tagName).toBe(BUTTONS_DATA[i].tag);
+    expect(text).toBe(BUTTONS_DATA[i].text);
   };
-  await buttons[1].click()
-})
+
+  await buttons[1].click();
+});
