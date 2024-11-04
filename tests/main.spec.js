@@ -30,7 +30,7 @@ test('Check subscribe block', async () => {
 })
 
 test('Check subscribe popup', async ({ page }) => {
-  await page.goto(`/?subscribe=true`);
+  await page.goto('/?subscribe=true');
 
   const modal = page.locator('//div[contains(@class, "vkuiPopoutRoot__modal")]');
   expect(await modal.count()).toBeGreaterThan(0);
