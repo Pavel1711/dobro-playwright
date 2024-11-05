@@ -1,5 +1,3 @@
-export const DOMAIN = 'https://dobro.mail.ru/';
-
 export const NAVS_DATA = [
   {
     url: '/about/',

@@ -1,7 +1,7 @@
 // @ts-check
 import { chromium, expect, test } from '@playwright/test';
-import BasePage from '../framework/pages/BasePage';
-import BlocksPage from '../framework/pages/BlocksPage';
+import BasePage from '../../framework/pages/BasePage';
+import BlocksPage from '../../framework/pages/BlocksPage';
 
 const url = '/';
 
